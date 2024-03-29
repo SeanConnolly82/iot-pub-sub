@@ -1,6 +1,5 @@
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <iostream>
+#include <cstring>
 #include "MQTTClient.h"
 
 #define ADDRESS     "tcp://192.168.0.243:1883"
@@ -15,29 +14,29 @@
 volatile MQTTClient_deliveryToken deliveredtoken;
 
 void delivered(void *context, MQTTClient_deliveryToken dt) {
-    printf("Message with token value %d delivery confirmed\n", dt);
+    std::cout << "Message with token value " << dt << " delivery confirmed" << std::endl;
     deliveredtoken = dt;
 }
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message) {
     int i;
     char* payloadptr;
-    printf("Message arrived\n");
-    printf("     topic: %s\n", topicName);
-    printf("   message: ");
+    std::cout << "Message arrived" << std::endl;
+    std::cout << "     topic: " << topicName << std::endl;
+    std::cout << "   message: ";
     payloadptr = (char*) message->payload;
     for(i=0; i<message->payloadlen; i++) {
-        putchar(*payloadptr++);
+        std::cout << *payloadptr++;
     }
-    putchar('\n');
+    std::cout << std::endl;
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
 }
 
 void connlost(void *context, char *cause) {
-    printf("\nConnection lost\n");
-    printf("     cause: %s\n", cause);
+    std::cout << std::endl << "Connection lost" << std::endl;
+    std::cout << "     cause: " << cause << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -54,11 +53,11 @@ int main(int argc, char* argv[]) {
 
     MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered);
     if ((rc = MQTTClient_connect(client, &opts)) != MQTTCLIENT_SUCCESS) {
-        printf("Failed to connect, return code %d\n", rc);
+        std::cout << "Failed to connect, return code " << rc << std::endl;
         exit(-1);
     }
-    printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n"
-           "Press Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
+    std::cout << "Subscribing to topic " << TOPIC << " for client " << CLIENTID << " using QoS " << QOS << std::endl << std::endl;
+    std::cout << "Press Q<Enter> to quit" << std::endl << std::endl;
     MQTTClient_subscribe(client, TOPIC, QOS);
 
     do {
