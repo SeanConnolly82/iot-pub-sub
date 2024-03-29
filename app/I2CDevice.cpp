@@ -12,7 +12,7 @@ using namespace std;
 
 #define HEX(x) setw(2) << setfill('0') << hex << (int)(x)
 
-namespace EE513 {
+namespace DEVICE {
 
 /**
  * Constructor for the I2CDevice class. It requires the bus number and device number.   
@@ -149,4 +149,4 @@ I2CDevice::~I2CDevice() {
 	if(file!=-1) this->close();
 }
 
-} /* namespace EE513*/
+} /* namespace DEVICE*/

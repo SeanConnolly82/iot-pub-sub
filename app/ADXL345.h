@@ -1,7 +1,6 @@
 /*
  Modified from https://github.com/derekmolloy/exploringrpi/tree/master/chp08/i2c/cpp
  */
-
 #ifndef ADXL345_H_
 #define ADXL345_H_
 #include"I2CDevice.h"
@@ -17,7 +16,7 @@ namespace EE513 {
  * Protected inheritance means that the public I2CDevice methods are not publicly accessible
  * by an object of the ADXL345 class.
  */
-class ADXL345:protected I2CDevice{
+class ADXL345:public DEVICE::I2CDevice{
 
 public:
 
@@ -65,6 +64,6 @@ public:
 	virtual ~ADXL345();
 };
 
-} /* namespace ee513 */
+} /* namespace EE513 */
 
 #endif /* ADXL345_H_ */

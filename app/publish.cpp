@@ -1,13 +1,16 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <sstream> 
 #include <chrono>
 #include <thread>
 #include "MQTTClient.h"
+#include "ADXL345.h"
 
 #define CPU_TEMP "/sys/class/thermal/thermal_zone0/temp"
 
 using namespace std;
+using namespace EE513;
 
 // Please replace the following address with the address of your server
 #define ADDRESS    "tcp://192.168.0.243:1883"
@@ -19,28 +22,30 @@ using namespace std;
 #define TIMEOUT    10000L
 #define PUBLISH_INTERVAL 10 // in seconds
 
-float getSensorData() {
-    int cpuTemp;
-    ifstream fs;
-    fs.open(CPU_TEMP);
-    fs >> cpuTemp;
-    fs.close();
-    return (((float)cpuTemp) / 1000);
+string getDeviceData(ADXL345* device) {
+    stringstream dataStream;
+    device->readSensorState();
+    dataStream << "Pitch: " << device->getPitch() << ", Roll: " << device->getRoll();
+    return dataStream.str();
 }
 
 int main(int argc, char* argv[]) {
     char str_payload[100]; // Set your max message size here
+
+    ADXL345 device(1, 0x53);
+    device.setResolution(ADXL345::NORMAL);
+    device.setRange(ADXL345::PLUSMINUS_4_G);
+
     MQTTClient client;
     MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
-
-    MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-
     opts.keepAliveInterval = 20;
     opts.cleansession = 1;
     opts.username = AUTHMETHOD;
     opts.password = AUTHTOKEN;
+
+    MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
     while (true) {
         int rc;
@@ -48,8 +53,8 @@ int main(int argc, char* argv[]) {
             cout << "Failed to connect, return code " << rc << endl;
             return -1;
         }
-
-        sprintf(str_payload, "{\"d\":{\"CPUTemp\": %f }}", getSensorData());
+        string deviceData = getDeviceData(&device);
+        sprintf(str_payload, "{\"d\":{\"CPUTemp\": %s }}", deviceData);
         pubmsg.payload = str_payload;
         pubmsg.payloadlen = strlen(str_payload);
         pubmsg.qos = QOS;

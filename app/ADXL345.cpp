@@ -51,8 +51,8 @@ namespace EE513 {
  * @param lsb an unsigned character that contains the least significant byte
  */
 short ADXL345::combineRegisters(unsigned char msb, unsigned char lsb){
-   //shift the MSB left by 8 bits and OR with LSB
-   return ((short)msb<<8)|(short)lsb;
+    //shift the MSB left by 8 bits and OR with LSB
+    return ((short)msb<<8)|(short)lsb;
 }
 
 /**
@@ -61,13 +61,13 @@ short ADXL345::combineRegisters(unsigned char msb, unsigned char lsb){
  * to calculate the angular pitch and roll values in degrees.
  */
 void ADXL345::calculatePitchAndRoll(){
-	float gravity_range;
-	switch(ADXL345::range){
-		case ADXL345::PLUSMINUS_16_G: gravity_range=32.0f; break;
-		case ADXL345::PLUSMINUS_8_G: gravity_range=16.0f; break;
-		case ADXL345::PLUSMINUS_4_G: gravity_range=8.0f; break;
-		default: gravity_range=4.0f; break;
-	}
+    float gravity_range;
+    switch(ADXL345::range){
+        case ADXL345::PLUSMINUS_16_G: gravity_range=32.0f; break;
+        case ADXL345::PLUSMINUS_8_G: gravity_range=16.0f; break;
+        case ADXL345::PLUSMINUS_4_G: gravity_range=8.0f; break;
+        default: gravity_range=4.0f; break;
+    }
     float resolution = 1024.0f;
     if (this->resolution==ADXL345::HIGH) resolution = 8192.0f; //13-bit resolution
     float factor = gravity_range/resolution;
@@ -75,11 +75,11 @@ void ADXL345::calculatePitchAndRoll(){
     float accXg = this->accelerationX * factor;
     float accYg = this->accelerationY * factor;
     float accZg = this->accelerationZ * factor;
-	float accXSquared = accXg * accXg ;
-	float accYSquared = accYg * accYg ;
-	float accZSquared = accZg * accZg ;
-	this->pitch = 180 * atan(accXg/sqrt(accYSquared + accZSquared))/M_PI;
-	this->roll = 180 * atan(accYg/sqrt(accXSquared + accZSquared))/M_PI;
+    float accXSquared = accXg * accXg ;
+    float accYSquared = accYg * accYg ;
+    float accZSquared = accZg * accZg ;
+    this->pitch = 180 * atan(accXg/sqrt(accYSquared + accZSquared))/M_PI;
+    this->roll = 180 * atan(accYg/sqrt(accXSquared + accZSquared))/M_PI;
 }
 
 /**
@@ -88,12 +88,12 @@ void ADXL345::calculatePitchAndRoll(){
  * @return 0 if the register is updated successfully
  */
 int ADXL345::updateRegisters(){
-   //update the DATA_FORMAT register
-   char data_format = 0x00;  //+/- 2g with normal resolution
-   //Full_resolution is the 3rd LSB
-   data_format = data_format|((this->resolution)<<3);
-   data_format = data_format|this->range; // 1st and 2nd LSB therefore no shift
-   return this->writeRegister(DATA_FORMAT, data_format);
+    //update the DATA_FORMAT register
+    char data_format = 0x00;  //+/- 2g with normal resolution
+    //Full_resolution is the 3rd LSB
+    data_format = data_format|((this->resolution)<<3);
+    data_format = data_format|this->range; // 1st and 2nd LSB therefore no shift
+    return this->writeRegister(DATA_FORMAT, data_format);
 }
 
 /**
@@ -104,19 +104,19 @@ int ADXL345::updateRegisters(){
  * @param I2CAddress The address of the ADLX345 device (default 0x53, but can be altered)
  */
 ADXL345::ADXL345(unsigned int I2CBus, unsigned int I2CAddress):
-	I2CDevice(I2CBus, I2CAddress){   // this member initialisation list calls the parent constructor
-	this->I2CAddress = I2CAddress;
-	this->I2CBus = I2CBus;
-	this->accelerationX = 0;
-	this->accelerationY = 0;
-	this->accelerationZ = 0;
-	this->pitch = 0.0f;
-	this->roll = 0.0f;
-	this->registers = NULL;
-	this->range = ADXL345::PLUSMINUS_16_G;
-	this->resolution = ADXL345::HIGH;
-	this->writeRegister(POWER_CTL, 0x08);
-	this->updateRegisters();
+    I2CDevice(I2CBus, I2CAddress){   // this member initialisation list calls the parent constructor
+    this->I2CAddress = I2CAddress;
+    this->I2CBus = I2CBus;
+    this->accelerationX = 0;
+    this->accelerationY = 0;
+    this->accelerationZ = 0;
+    this->pitch = 0.0f;
+    this->roll = 0.0f;
+    this->registers = NULL;
+    this->range = ADXL345::PLUSMINUS_16_G;
+    this->resolution = ADXL345::HIGH;
+    this->writeRegister(POWER_CTL, 0x08);
+    this->updateRegisters();
 }
 
 /**
@@ -126,18 +126,18 @@ ADXL345::ADXL345(unsigned int I2CBus, unsigned int I2CAddress):
  * @return 0 if the registers are successfully read and -1 if the device ID is incorrect.
  */
 int ADXL345::readSensorState(){
-	this->registers = this->readRegisters(BUFFER_SIZE, 0x00);
-	if(*this->registers!=0xe5){
-		perror("ADXL345: Failure Condition - Sensor ID not Verified");
-		return -1;
-	}
-	this->accelerationX = this->combineRegisters(*(registers+DATAX1), *(registers+DATAX0));
-	this->accelerationY = this->combineRegisters(*(registers+DATAY1), *(registers+DATAY0));
-	this->accelerationZ = this->combineRegisters(*(registers+DATAZ1), *(registers+DATAZ0));
-	this->resolution = (ADXL345::RESOLUTION) (((*(registers+DATA_FORMAT))&0x08)>>3);
-	this->range = (ADXL345::RANGE) ((*(registers+DATA_FORMAT))&0x03);
-	this->calculatePitchAndRoll();
-	return 0;
+    this->registers = this->readRegisters(BUFFER_SIZE, 0x00);
+    if(*this->registers!=0xe5){
+        perror("ADXL345: Failure Condition - Sensor ID not Verified");
+        return -1;
+    }
+    this->accelerationX = this->combineRegisters(*(registers+DATAX1), *(registers+DATAX0));
+    this->accelerationY = this->combineRegisters(*(registers+DATAY1), *(registers+DATAY0));
+    this->accelerationZ = this->combineRegisters(*(registers+DATAZ1), *(registers+DATAZ0));
+    this->resolution = (ADXL345::RESOLUTION) (((*(registers+DATA_FORMAT))&0x08)>>3);
+    this->range = (ADXL345::RANGE) ((*(registers+DATA_FORMAT))&0x03);
+    this->calculatePitchAndRoll();
+    return 0;
 }
 
 /**
@@ -145,8 +145,8 @@ int ADXL345::readSensorState(){
  * @param range One of the four possible gravity ranges defined by the RANGE enumeration
  */
 void ADXL345::setRange(ADXL345::RANGE range) {
-	this->range = range;
-	updateRegisters();
+    this->range = range;
+    updateRegisters();
 }
 
 /**
@@ -154,8 +154,8 @@ void ADXL345::setRange(ADXL345::RANGE range) {
  * @param resolution either HIGH or NORMAL resolution. HIGH resolution is only available if the range is set to +/- 16g
  */
 void ADXL345::setResolution(ADXL345::RESOLUTION resolution) {
-	this->resolution = resolution;
-	updateRegisters();
+    this->resolution = resolution;
+    updateRegisters();
 }
 
 /**
@@ -163,15 +163,15 @@ void ADXL345::setResolution(ADXL345::RESOLUTION resolution) {
  * @param iterations The number of 0.1s iterations to take place.
  */
 void ADXL345::displayPitchAndRoll(int iterations){
-	int count = 0;
-	while(count < iterations){
-	      cout << "Pitch:"<< this->getPitch() << " Roll:" << this->getRoll() << "     \r"<<flush;
-	      usleep(100000);
-	      this->readSensorState();
-	      count++;
-	}
+    int count = 0;
+    while(count < iterations){
+        cout << "Pitch:"<< this->getPitch() << " Roll:" << this->getRoll() << "     \r"<<flush;
+        usleep(100000);
+        this->readSensorState();
+        count++;
+    }
 }
 
 ADXL345::~ADXL345() {}
 
-} /* namespace ee513 */
+} /* namespace EE513 */

@@ -4,7 +4,7 @@
 #define I2C_0 "/dev/i2c-0"
 #define I2C_1 "/dev/i2c-1"
 
-namespace EE513{
+namespace DEVICE{
 
 /**
  * @class I2CDevice
@@ -28,6 +28,6 @@ public:
 	virtual ~I2CDevice();
 };
 
-} /* namespace EE513*/
+} /* namespace DEVICE */
 
 #endif /* I2C_H_ */
