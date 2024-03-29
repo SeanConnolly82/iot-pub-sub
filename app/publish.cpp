@@ -17,33 +17,55 @@ using namespace EE513;
 #define CLIENTID   "rpi1"
 #define AUTHMETHOD "sean"
 #define AUTHTOKEN  "password123"
-#define TOPIC      "ee513/CPUTemp"
+#define TOPIC      "ee513/test"
 #define QOS        1
-#define TIMEOUT    10000L
-#define PUBLISH_INTERVAL 10 // in seconds
+#define TIMEOUT    1000L
+#define PUBLISH_INTERVAL 1 // in seconds
+#define LWT_MESSAGE "The ADXL345 has disconnected unexpectedly"
+#define LWT_RETAINED 0
+
+float getCPUTemperature() {        // get the CPU temperature
+   int cpuTemp;                    // store as an int
+   fstream fs;
+   fs.open(CPU_TEMP, fstream::in); // read from the file
+   fs >> cpuTemp;
+   fs.close();
+   return (((float)cpuTemp)/1000);
+}
 
 string getDeviceData(ADXL345* device) {
     stringstream dataStream;
     device->readSensorState();
-    dataStream << "Pitch: " << device->getPitch() << ", Roll: " << device->getRoll();
+    dataStream << "{Pitch: " << device->getPitch() << ", Roll: " << device->getRoll() << "}";
     return dataStream.str();
 }
 
 int main(int argc, char* argv[]) {
-    char str_payload[100]; // Set your max message size here
+    char str_payload[1000]; // Set your max message size here   
 
     ADXL345 device(1, 0x53);
     device.setResolution(ADXL345::NORMAL);
     device.setRange(ADXL345::PLUSMINUS_4_G);
 
     MQTTClient client;
-    MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
+
+    MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
     opts.keepAliveInterval = 20;
     opts.cleansession = 1;
     opts.username = AUTHMETHOD;
     opts.password = AUTHTOKEN;
+
+
+    MQTTClient_willOptions willOptions = MQTTClient_willOptions_initializer;
+    // Set the LWT message
+    willOptions.topicName = TOPIC;
+    willOptions.message = LWT_MESSAGE;
+    willOptions.qos = QOS;
+    willOptions.retained = LWT_RETAINED;
+    // Assign LWT options to connect options
+    opts.will = &willOptions;
 
     MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
@@ -54,7 +76,7 @@ int main(int argc, char* argv[]) {
             return -1;
         }
         string deviceData = getDeviceData(&device);
-        sprintf(str_payload, "{\"d\":{\"CPUTemp\": %s }}", deviceData);
+        sprintf(str_payload, "{\"Accelerometer\": %s , \"CPU Temp\": %f}", deviceData.c_str(), getCPUTemperature());
         pubmsg.payload = str_payload;
         pubmsg.payloadlen = strlen(str_payload);
         pubmsg.qos = QOS;
@@ -62,15 +84,17 @@ int main(int argc, char* argv[]) {
 
         MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
 
-        cout << "Waiting for up to " << (int)(TIMEOUT/1000) <<
-            " seconds for publication of " << str_payload <<
-            " \non topic " << TOPIC << " for ClientID: " << CLIENTID << endl;
+        cout << str_payload << endl;
+
+        // cout << "Waiting for up to " << (int)(TIMEOUT/1000) <<
+        //     " seconds for publication of " << str_payload <<
+        //     " \non topic " << TOPIC << " for ClientID: " << CLIENTID << endl;
 
         rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
-        cout << "Message with token " << (int)token << " delivered." << endl;
+        // cout << "Message with token " << (int)token << " delivered." << endl;
         // Disconnect MQTT client after publishing
         MQTTClient_disconnect(client, 10000);
-        // Sleep for 10 seconds
+        // Sleep for 1 seconds
         std::this_thread::sleep_for(std::chrono::seconds(PUBLISH_INTERVAL));
     }
 

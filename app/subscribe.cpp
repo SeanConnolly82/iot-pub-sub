@@ -6,7 +6,7 @@
 #define CLIENTID    "rpi2"
 #define AUTHMETHOD  "sean"
 #define AUTHTOKEN   "password123"
-#define TOPIC       "ee513/CPUTemp"
+#define TOPIC       "ee513"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
