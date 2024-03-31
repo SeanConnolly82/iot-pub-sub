@@ -6,8 +6,6 @@
 #include <cstring>
 #include <sstream> 
 #include <chrono>
-#include <thread>
-#include <csignal>
 #include "MQTTClient.h"
 #include "ADXL345.h"
 
@@ -29,9 +27,10 @@ public:
     ADXL345Publisher();
     virtual float getCPUTemperature();
     virtual string getDeviceData(ADXL345* ADXL345Device);
-    virtual void run(ADXL345* ADXL345Device);
+    virtual void run(MQTTClient& client, ADXL345* ADXL345Device);
     virtual void setExitFlag(bool value);
-    static void signalHandler(int signal, ADXL345Publisher* publisher);
+    virtual void exitHandler();
+    virtual void startExitHandler();
 }; /* namespace publisher */
 }
 #endif // ADXL345PUBLISHER_H

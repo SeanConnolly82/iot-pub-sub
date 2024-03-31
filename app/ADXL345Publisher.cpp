@@ -4,7 +4,6 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
-#include <csignal>
 #include "MQTTClient.h"
 #include "ADXL345.h"
 #include "ADXL345Publisher.h"
@@ -14,11 +13,9 @@ using namespace device;
 using namespace ee513;
 
 #define CPU_TEMP "/sys/class/thermal/thermal_zone0/temp"
-#define ADDRESS    "tcp://192.168.0.243:1883"
-#define CLIENTID   "rpi1"
 #define AUTHMETHOD "sean"
 #define AUTHTOKEN  "password123"
-#define TOPIC      "ee513/test"
+#define TOPIC      "ee513/assignment2"
 #define QOS        1
 #define TIMEOUT    1000L
 #define PUBLISH_INTERVAL 1 // in seconds
@@ -29,8 +26,6 @@ namespace publisher {
 
 // Constructor definition with member initializer list
 ADXL345Publisher::ADXL345Publisher() {
-
-    cout << "Constructor" << endl;
 
     this->exitFlag = false;
 
@@ -52,12 +47,22 @@ ADXL345Publisher::ADXL345Publisher() {
 }
 
 void ADXL345Publisher::setExitFlag(bool value) {
-    exitFlag = value;
+    cout << "The publisher will disconnect after sending the current message." << endl;
+    this->exitFlag = value;
 }
 
-void ADXL345Publisher::signalHandler(int signal, ADXL345Publisher* publisher) {
-    cout << "Received signal: " << signal << ", exiting gracefully..." << endl;
-    publisher->setExitFlag(true);
+void ADXL345Publisher::exitHandler() {
+    std::cout << "Press Q<Enter> to quit" << std::endl;
+    int ch;
+    do{
+        ch = getchar();
+    } while(ch != 'Q' && ch != 'q');
+    this->setExitFlag(true);
+}
+
+void ADXL345Publisher::startExitHandler() {
+        std::thread exitHandlerThread(&ADXL345Publisher::exitHandler, this);
+        exitHandlerThread.detach();
 }
 
 float ADXL345Publisher::getCPUTemperature() {
@@ -76,12 +81,10 @@ string ADXL345Publisher::getDeviceData(ADXL345* ADXL345Device) {
     return dataStream.str();
 }
 
-void ADXL345Publisher::run(ADXL345* ADXL345Device) {
-    // Connect to the MQTT broker
+void ADXL345Publisher::run(MQTTClient& client, ADXL345* ADXL345Device) {
     int rc;
-    MQTTClient client;
-    MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-
+    this->startExitHandler();
+    // Connect to the MQTT broker
     if ((rc = MQTTClient_connect(client, &this->opts)) != MQTTCLIENT_SUCCESS) {
         cout << "Failed to connect, return code " << rc << endl;
         return;
@@ -98,12 +101,11 @@ void ADXL345Publisher::run(ADXL345* ADXL345Device) {
         pubmsg.retained = 0;
 
         MQTTClient_publishMessage(client, TOPIC, &this->pubmsg, &this->token);
-        cout << str_payload << endl;
+        // cout << str_payload << endl;
 
         rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
         std::this_thread::sleep_for(std::chrono::seconds(PUBLISH_INTERVAL));
     }
-
     // Disconnect MQTT client after the loop
     MQTTClient_disconnect(client, 10000);
     MQTTClient_destroy(&client);
