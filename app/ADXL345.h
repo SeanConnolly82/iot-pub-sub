@@ -8,7 +8,7 @@
 /// The ADXL345 has 0x40 registers (0x01 to 0x1C are reserved and should not be accessed)
 #define BUFFER_SIZE 0x40
 
-namespace EE513 {
+namespace ee513 {
 
 /**
  * @class ADXL345
@@ -16,7 +16,7 @@ namespace EE513 {
  * Protected inheritance means that the public I2CDevice methods are not publicly accessible
  * by an object of the ADXL345 class.
  */
-class ADXL345:public DEVICE::I2CDevice{
+class ADXL345:public device::I2CDevice{
 
 public:
 

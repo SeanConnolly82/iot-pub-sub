@@ -9,8 +9,9 @@
 #include <stdio.h>
 
 using namespace std;
+using namespace device;
 
-namespace EE513 {
+namespace ee513 {
 
 //From Table 19. of the ADXL345 Data sheet
 #define DEVID          0x00   //Device ID

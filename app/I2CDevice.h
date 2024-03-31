@@ -4,7 +4,7 @@
 #define I2C_0 "/dev/i2c-0"
 #define I2C_1 "/dev/i2c-1"
 
-namespace DEVICE{
+namespace device{
 
 /**
  * @class I2CDevice
@@ -28,6 +28,6 @@ public:
 	virtual ~I2CDevice();
 };
 
-} /* namespace DEVICE */
+} /* namespace device */
 
 #endif /* I2C_H_ */
