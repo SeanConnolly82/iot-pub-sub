@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 #include <string>
+#include <cmath>
 #include <json-c/json.h>
 #include "MQTTClient.h"
 
@@ -17,7 +18,9 @@ private:
     std::string payload;
 public:
     Subscriber();
-    double parseCpuTemp(const std::string& jsonString);
+    virtual void processMessage();
+    virtual void setMQTTCallbacks(MQTTClient& client);
+    virtual double parseCpuTemp(const std::string& jsonString);
     virtual int run(MQTTClient& client);
 };
 }

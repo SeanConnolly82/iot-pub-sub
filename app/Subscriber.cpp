@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <string>
+#include <cmath>
 #include <json-c/json.h>
 #include "MQTTClient.h"
 #include "Subscriber.h"
@@ -28,25 +29,24 @@ Subscriber::Subscriber() {
     this->opts.password = AUTHTOKEN;
 };
 
+void Subscriber::processMessage() {
+    // parse the JSON generically
+    // set some thresholds and trigger interrupts
+    this->parseCpuTemp(this->payload);
+};
+
 void Subscriber::delivered(void *context, MQTTClient_deliveryToken dt) {
     cout << "Message with token value " << dt << " delivery confirmed" << endl;
     deliveredtoken = dt;
 };
 
 int Subscriber::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message) {
-    //int i;
-    //string jsonString;
-    //char* payloadptr;
-    //cout << "Message arrived" << endl;
-    //cout << "     topic: " << topicName << endl;
-    //cout << "   message: ";
+    int i;
+    Subscriber* sub = static_cast<Subscriber*>(context);
     string payloadString(static_cast<char*>(message->payload), message->payloadlen);
-    //cout << "Message payload: " << payloadString << endl;
-    // payloadptr = (char*) message->payload;
-    // for(i=0; i<message->payloadlen; i++) {
-    //     cout << *payloadptr++;
-    // }
-    // cout << endl;
+    // use set CPU temp
+    sub->payload = payloadString;
+    sub->processMessage();
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -57,34 +57,14 @@ void Subscriber::connlost(void *context, char *cause) {
     cout << "     cause: " << cause << endl;
 };
 
-double Subscriber::parseCpuTemp(const std::string& jsonString) {
-    return 0.0;
-    // JSONNode node = libjson::parse(jsonString);
-    // // Check if the top-level node is an object
-    // if (node.type() != JSON_NODE) {
-    //     std::cerr << "Invalid JSON string: not an object" << std::endl;
-    //     return 0.0;
-    // }
-    // // Find the "CPU Temp" key
-    // JSONNode::const_iterator iter = node.find("CPU Temp");
-    // if (iter != node.end()) {
-    //     // Check if the value is a number
-    //     if (iter->type() == JSON_NUMBER) {
-    //         return iter->as_float();
-    //     } else {
-    //         std::cerr << "Invalid JSON string: CPU Temp value is not a number" << std::endl;
-    //         return 0.0;
-    //     }
-    // } else {
-    //     std::cerr << "Invalid JSON string: missing CPU Temp key" << std::endl;
-    //     return 0.0;
-    // }
-};
+void Subscriber::setMQTTCallbacks(MQTTClient& client) {
+    MQTTClient_setCallbacks(client, this, this->connlost, this->msgarrvd, this->delivered);
+}
 
 int Subscriber::run(MQTTClient& client) {
 
     int rc, ch;
-    MQTTClient_setCallbacks(client, NULL, this->connlost, this->msgarrvd, this->delivered);
+    this->setMQTTCallbacks(client);
 
     if ((rc = MQTTClient_connect(client, &this->opts)) != MQTTCLIENT_SUCCESS) {
         cout << "Failed to connect, return code " << rc << std::endl;
@@ -99,8 +79,35 @@ int Subscriber::run(MQTTClient& client) {
     MQTTClient_disconnect(client, 10000);
     MQTTClient_destroy(&client);
     return rc;
-
 };
+
+double Subscriber::parseCpuTemp(const std::string& jsonString) {
+
+    // make this generic
+    // Parse the JSON string
+    cout << jsonString << endl;
+    const char* jsonStringCStr = jsonString.c_str();
+    json_object* root = json_tokener_parse(jsonStringCStr);
+
+    double cpu_temp = 0.0; // Default value in case parsing fails
+
+    if (root != nullptr) {
+        // Retrieve CPU temperature from the parsed JSON object
+        json_object* cpu_temp_obj;
+        if (json_object_object_get_ex(root, "CPU Temp", &cpu_temp_obj)) {
+            cpu_temp = json_object_get_double(cpu_temp_obj);
+            std::cout << "CPU Temp: " << cpu_temp << std::endl;
+        } else {
+            std::cerr << "CPU Temp not found in JSON" << std::endl;
+        }
+        // Free the parsed JSON object
+        json_object_put(root);
+    } else {
+        std::cerr << "Failed to parse JSON" << std::endl;
+    }
+    return cpu_temp; // Return the parsed CPU temperature
+};
+
 }
 
 int main(int argc, char* argv[]) {
@@ -108,8 +115,8 @@ int main(int argc, char* argv[]) {
     MQTTClient client;
     MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
-    Subscriber subscriber;
-    int rc = subscriber.run(client);
-
+    Subscriber sub;
+    int rc = sub.run(client);
     return rc;
+    // In the application have MAX_TEMP, pitch and roll, to set an alarm threshold
 };

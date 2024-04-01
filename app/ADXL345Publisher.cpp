@@ -78,7 +78,7 @@ float ADXL345Publisher::getCPUTemperature() {
 string ADXL345Publisher::getDeviceData(ADXL345* ADXL345Device) {
     stringstream dataStream;
     ADXL345Device->readSensorState();
-    dataStream << "{Pitch: " << ADXL345Device->getPitch() << ", Roll: " << ADXL345Device->getRoll() << "}";
+    dataStream << "{\"Pitch\" : " << ADXL345Device->getPitch() << ", \"Roll\": " << ADXL345Device->getRoll() << "}";
     return dataStream.str();
 }
 
