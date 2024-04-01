@@ -16,11 +16,12 @@ using namespace ee513;
 #define AUTHMETHOD "sean"
 #define AUTHTOKEN  "password123"
 #define TOPIC      "ee513/assignment2"
-#define QOS        1
+#define QOS        2
 #define TIMEOUT    1000L
 #define PUBLISH_INTERVAL 1 // in seconds
 #define LWT_MESSAGE "The ADXL345 has disconnected unexpectedly"
 #define LWT_RETAINED 0
+//TODO: Pass some of these constants to the consructor
 
 namespace publisher {
 
