@@ -21,6 +21,11 @@ using namespace subscriber;
 volatile MQTTClient_deliveryToken deliveredtoken;
 
 namespace subscriber {
+
+/**
+ * @brief Constructor for ADXL345Subscriber class.
+ * Initializes MQTT client connection options.
+ */
 ADXL345Subscriber::ADXL345Subscriber() {
     this->opts = MQTTClient_connectOptions_initializer;
     this->opts.keepAliveInterval = 20;
@@ -29,21 +34,53 @@ ADXL345Subscriber::ADXL345Subscriber() {
     this->opts.password = AUTHTOKEN;
 };
 
+/**
+ * @brief Set the maximum limits for CPU temperature, pitch, and roll.
+ * @param maxCPUTemp The maximum CPU temperature threshold.
+ * @param maxPitch The maximum pitch threshold.
+ * @param maxRoll The maximum roll threshold.
+ */
 void ADXL345Subscriber::setMaxLimits(float maxCPUTemp, float maxPitch, float maxRoll) {
     this->maxCPUTemp = maxCPUTemp;
     this->maxPitch = maxPitch;
     this->maxRoll = maxRoll;
 };
 
+/**
+ * @brief Process the incoming MQTT message payload.
+ * @param payload The MQTT message payload.
+ */
 void ADXL345Subscriber::processMessage(std::string payload) {
-    this->parseJSONMessage(payload);
+    SensorData data = this->parseJSONMessage(payload);
+    if (data.cpuTemp >= this->maxCPUTemp) {
+        cout << "Limit breached with CPU Temp: " << data.cpuTemp << endl;
+    }
+    if (data.pitch >= this->maxPitch) {
+        cout << "Limit breached with CPU Temp: " << data.pitch << endl;
+    }
+    if (data.roll >= this->maxRoll) {
+        cout << "Limit breached with CPU Temp: " << data.roll << endl;
+    }
 };
 
+/**
+ * @brief Callback function invoked when a message is delivered.
+ * @param context The context associated with the callback.
+ * @param dt The delivery token associated with the delivered message.
+ */
 void ADXL345Subscriber::delivered(void *context, MQTTClient_deliveryToken dt) {
     cout << "Message with token value " << dt << " delivery confirmed" << endl;
     deliveredtoken = dt;
 };
 
+/**
+ * @brief Callback function invoked when a message is received.
+ * @param context The context associated with the callback.
+ * @param topicName The name of the topic associated with the message.
+ * @param topicLen The length of the topic name.
+ * @param message The MQTT message received.
+ * @return The status code indicating the result of message processing.
+ */
 int ADXL345Subscriber::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message) {
     int i;
     ADXL345Subscriber* sub = static_cast<ADXL345Subscriber*>(context);
@@ -54,15 +91,29 @@ int ADXL345Subscriber::msgarrvd(void *context, char *topicName, int topicLen, MQ
     return 1;
 };
 
+/**
+ * @brief Callback function invoked when the MQTT connection is lost.
+ * @param context The context associated with the callback.
+ * @param cause The cause of the connection loss.
+ */
 void ADXL345Subscriber::connlost(void *context, char *cause) {
     cout << endl << "Connection lost" << endl;
     cout << "     cause: " << cause << endl;
 };
 
+/**
+ * @brief Set the MQTT client callbacks.
+ * @param client The MQTT client object.
+ */
 void ADXL345Subscriber::setMQTTCallbacks(MQTTClient& client) {
     MQTTClient_setCallbacks(client, this, this->connlost, this->msgarrvd, this->delivered);
 }
 
+/**
+ * @brief Run the MQTT subscriber.
+ * @param client The MQTT client object.
+ * @return The status code indicating the result of the subscriber run.
+ */
 int ADXL345Subscriber::run(MQTTClient& client) {
 
     int rc, ch;
@@ -83,7 +134,12 @@ int ADXL345Subscriber::run(MQTTClient& client) {
     return rc;
 };
 
-double ADXL345Subscriber::parseJSONMessage(const std::string& jsonString) {
+/**
+ * @brief Parse the JSON-formatted message payload and extract sensor data.
+ * @param jsonString The JSON-formatted message payload.
+ * @return A SensorData structure containing parsed sensor data.
+ */
+ADXL345Subscriber::SensorData ADXL345Subscriber::parseJSONMessage(const std::string& jsonString) {
 
     cout << jsonString << endl;
     const char* jsonStringCStr = jsonString.c_str();
@@ -118,5 +174,6 @@ double ADXL345Subscriber::parseJSONMessage(const std::string& jsonString) {
     } else {
         cerr << "Failed to parse JSON" << endl;
     }
-};
+    return sensorData;
+}
 }

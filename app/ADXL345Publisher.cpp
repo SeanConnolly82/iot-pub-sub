@@ -22,11 +22,13 @@ using namespace ee513;
 #define PUBLISH_INTERVAL 1 // in seconds
 #define LWT_MESSAGE "The ADXL345 has disconnected unexpectedly"
 #define LWT_RETAINED 0
-//TODO: Pass some of these constants to the consructor
 
 namespace publisher {
 
-// Constructor definition with member initializer list
+/**
+ * @brief Constructor for ADXL345Publisher class.
+ * Initializes MQTT subscriber client connection options.
+ */
 ADXL345Publisher::ADXL345Publisher() {
 
     this->exitFlag = false;
@@ -48,11 +50,18 @@ ADXL345Publisher::ADXL345Publisher() {
     this->opts.will = &willOptions;
 }
 
+/**
+ * @brief Set the exit flag to indicate whether to stop publishing data.
+ * @param value The value to set the exit flag.
+ */
 void ADXL345Publisher::setExitFlag(bool value) {
     cout << "The publisher will disconnect after sending the current message." << endl;
     this->exitFlag = value;
 }
 
+/**
+ * @brief Calls setExitFlag based on user input. 
+ */
 void ADXL345Publisher::exitHandler() {
     std::cout << "Press Q<Enter> to quit" << std::endl;
     int ch;
@@ -62,11 +71,18 @@ void ADXL345Publisher::exitHandler() {
     this->setExitFlag(true);
 }
 
+/**
+ * @brief Start the exit handler thread.
+ */
 void ADXL345Publisher::startExitHandler() {
         std::thread exitHandlerThread(&ADXL345Publisher::exitHandler, this);
         exitHandlerThread.detach();
 }
 
+/**
+ * @brief Get the CPU temperature from the system.
+ * @return The CPU temperature in Celsius.
+ */
 float ADXL345Publisher::getCPUTemperature() {
     int cpuTemp;
     fstream fs;
@@ -76,6 +92,11 @@ float ADXL345Publisher::getCPUTemperature() {
     return (((float)cpuTemp)/1000);
 }
 
+/**
+ * @brief Get the data from the ADXL345 accelerometer.
+ * @param ADXL345Device Pointer to the ADXL345 device object.
+ * @return A JSON-formatted string containing accelerometer data.
+ */
 string ADXL345Publisher::getDeviceData(ADXL345* ADXL345Device) {
     stringstream dataStream;
     ADXL345Device->readSensorState();
@@ -83,6 +104,10 @@ string ADXL345Publisher::getDeviceData(ADXL345* ADXL345Device) {
     return dataStream.str();
 }
 
+/**
+ * @brief Get the current timestamp in string format.
+ * @return The current timestamp as a string.
+ */
 string ADXL345Publisher::getCurrentTimestamp() {
     auto now = chrono::system_clock::now();
     time_t current_time = chrono::system_clock::to_time_t(now);
@@ -91,6 +116,12 @@ string ADXL345Publisher::getCurrentTimestamp() {
     return string(buffer);
 }
 
+/**
+ * @brief Main function to run the publisher.
+ * Publishes data from the ADXL345 accelerometer via MQTT.
+ * @param client The MQTT client object.
+ * @param ADXL345Device Pointer to the ADXL345 device object.
+ */
 void ADXL345Publisher::run(MQTTClient& client, ADXL345* ADXL345Device) {
     int rc;
     this->startExitHandler();

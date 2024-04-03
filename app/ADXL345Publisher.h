@@ -18,6 +18,10 @@ using namespace ee513;
 
 namespace publisher {
 
+/**
+ * @class ADXL345Publisher
+ * @brief Class for publishing data from an ADXL345 accelerometer via MQTT.
+ */
 class ADXL345Publisher {
 private:
     MQTTClient_message pubmsg;

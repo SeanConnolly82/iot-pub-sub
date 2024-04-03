@@ -9,6 +9,11 @@
 #include "MQTTClient.h"
 
 namespace subscriber {
+
+/**
+ * @class ADXL345Subscriber
+ * @brief Class for subscribing to MQTT messages and processing ADXL345 sensor data.
+ */
 class ADXL345Subscriber {
 private:
     static void delivered(void *context, MQTTClient_deliveryToken dt);
@@ -28,7 +33,7 @@ public:
     virtual void setMaxLimits(float maxCPUTemp, float maxPitch, float maxRoll);
     virtual void processMessage(std::string payload);
     virtual void setMQTTCallbacks(MQTTClient& client);
-    virtual double parseJSONMessage(const std::string& jsonString);
+    SensorData parseJSONMessage(const std::string& jsonString);
     virtual int run(MQTTClient& client);
 };
 }

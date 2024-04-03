@@ -1,11 +1,13 @@
-#include "MQTTClient.h
+#include "MQTTClient.h"
 #include "ADXL345Subscriber.h"
 
 #define ADDRESS    "tcp://192.168.0.243:1883"
 #define CLIENTID   "rpi2"
 #define MAXTTEMP   30.0
-#define MAXPITCH   90.0
-#define MAXROLL    75.0
+#define MAXPITCH   10.0
+#define MAXROLL    10.0
+
+using namespace subscriber;
 
 int main(int argc, char* argv[]) {
     
