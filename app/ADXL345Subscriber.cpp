@@ -5,6 +5,7 @@
 #include <json-c/json.h>
 #include "MQTTClient.h"
 #include "ADXL345Subscriber.h"
+#include "wiringPi.h"
 
 using namespace std;
 using namespace subscriber;
@@ -17,6 +18,10 @@ using namespace subscriber;
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
+
+#define LED_CPU     17
+#define LED_PITCH   18
+#define LED_ROLL    19
 
 volatile MQTTClient_deliveryToken deliveredtoken;
 
@@ -52,15 +57,27 @@ void ADXL345Subscriber::setMaxLimits(float maxCPUTemp, float maxPitch, float max
  */
 void ADXL345Subscriber::processMessage(std::string payload) {
     SensorData data = this->parseJSONMessage(payload);
-    if (data.cpuTemp >= this->maxCPUTemp) {
-        cout << "Limit breached with CPU Temp: " << data.cpuTemp << endl;
-    }
-    if (data.pitch >= this->maxPitch) {
-        cout << "Limit breached with CPU Temp: " << data.pitch << endl;
-    }
-    if (data.roll >= this->maxRoll) {
-        cout << "Limit breached with CPU Temp: " << data.roll << endl;
-    }
+    digitalWrite(LED_CPU, this->checkWithinLimit(data.cpuTemp, this->maxCPUTemp));
+    digitalWrite(LED_PITCH, this->checkWithinLimit(data.pitch, this->maxPitch));
+    digitalWrite(LED_ROLL, this->checkWithinLimit(data.roll, this->maxRoll));
+};
+
+/**
+ * @brief Initializes the GPIO pins for the LEDs.
+ */
+void ADXL345Subscriber::initialiseLEDS() {
+    wiringPiSetupGpio();
+};
+
+/**
+ * @brief Checks if a value is within a specified limit.
+ * @param value The value to check.
+ * @param limit The limit to compare against.
+ * @return 1 if the value is within the limit, 0 otherwise.
+ */
+
+int ADXL345Subscriber::checkWithinLimit(float value, float limit) {
+    return (value >= limit) ? 1 : 0
 };
 
 /**
@@ -118,6 +135,7 @@ int ADXL345Subscriber::run(MQTTClient& client) {
 
     int rc, ch;
     this->setMQTTCallbacks(client);
+    this->initialiseLEDS();
 
     if ((rc = MQTTClient_connect(client, &this->opts)) != MQTTCLIENT_SUCCESS) {
         cout << "Failed to connect, return code " << rc << std::endl;

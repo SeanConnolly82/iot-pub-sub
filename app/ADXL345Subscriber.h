@@ -7,6 +7,8 @@
 #include <cmath>
 #include <json-c/json.h>
 #include "MQTTClient.h"
+#include "ADXL345Subscriber.h"
+#include "wiringPi.h"
 
 namespace subscriber {
 
@@ -32,6 +34,8 @@ public:
     };
     virtual void setMaxLimits(float maxCPUTemp, float maxPitch, float maxRoll);
     virtual void processMessage(std::string payload);
+    virtual void initialiseLEDS();
+    virtual int checkWithinLimit(float value, float limit);
     virtual void setMQTTCallbacks(MQTTClient& client);
     SensorData parseJSONMessage(const std::string& jsonString);
     virtual int run(MQTTClient& client);

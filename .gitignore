@@ -1,4 +1,5 @@
-paho/*
+paho
+WiringPi
 publish
 subscribe
 .vscode/*
