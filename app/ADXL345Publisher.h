@@ -4,8 +4,10 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include <sstream> 
+#include <sstream>
 #include <chrono>
+#include <thread>
+#include <ctime>
 #include "MQTTClient.h"
 #include "ADXL345.h"
 
@@ -27,6 +29,7 @@ public:
     ADXL345Publisher();
     virtual float getCPUTemperature();
     virtual string getDeviceData(ADXL345* ADXL345Device);
+    virtual string getCurrentTimestamp();
     virtual void run(MQTTClient& client, ADXL345* ADXL345Device);
     virtual void setExitFlag(bool value);
     virtual void exitHandler();

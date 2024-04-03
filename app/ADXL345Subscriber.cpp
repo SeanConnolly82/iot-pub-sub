@@ -4,7 +4,7 @@
 #include <cmath>
 #include <json-c/json.h>
 #include "MQTTClient.h"
-#include "Subscriber.h"
+#include "ADXL345Subscriber.h"
 
 using namespace std;
 using namespace subscriber;
@@ -21,7 +21,7 @@ using namespace subscriber;
 volatile MQTTClient_deliveryToken deliveredtoken;
 
 namespace subscriber {
-Subscriber::Subscriber() {
+ADXL345Subscriber::ADXL345Subscriber() {
     this->opts = MQTTClient_connectOptions_initializer;
     this->opts.keepAliveInterval = 20;
     this->opts.cleansession = 0;
@@ -29,39 +29,41 @@ Subscriber::Subscriber() {
     this->opts.password = AUTHTOKEN;
 };
 
-void Subscriber::processMessage() {
-    // parse the JSON generically
-    // set some thresholds and trigger interrupts
-    this->parseCpuTemp(this->payload);
+void ADXL345Subscriber::setMaxLimits(float maxCPUTemp, float maxPitch, float maxRoll) {
+    this->maxCPUTemp = maxCPUTemp;
+    this->maxPitch = maxPitch;
+    this->maxRoll = maxRoll;
 };
 
-void Subscriber::delivered(void *context, MQTTClient_deliveryToken dt) {
+void ADXL345Subscriber::processMessage(std::string payload) {
+    this->parseJSONMessage(payload);
+};
+
+void ADXL345Subscriber::delivered(void *context, MQTTClient_deliveryToken dt) {
     cout << "Message with token value " << dt << " delivery confirmed" << endl;
     deliveredtoken = dt;
 };
 
-int Subscriber::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message) {
+int ADXL345Subscriber::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message) {
     int i;
-    Subscriber* sub = static_cast<Subscriber*>(context);
+    ADXL345Subscriber* sub = static_cast<ADXL345Subscriber*>(context);
     string payloadString(static_cast<char*>(message->payload), message->payloadlen);
-    // use set CPU temp
-    sub->payload = payloadString;
-    sub->processMessage();
+    sub->processMessage(payloadString);
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
 };
 
-void Subscriber::connlost(void *context, char *cause) {
+void ADXL345Subscriber::connlost(void *context, char *cause) {
     cout << endl << "Connection lost" << endl;
     cout << "     cause: " << cause << endl;
 };
 
-void Subscriber::setMQTTCallbacks(MQTTClient& client) {
+void ADXL345Subscriber::setMQTTCallbacks(MQTTClient& client) {
     MQTTClient_setCallbacks(client, this, this->connlost, this->msgarrvd, this->delivered);
 }
 
-int Subscriber::run(MQTTClient& client) {
+int ADXL345Subscriber::run(MQTTClient& client) {
 
     int rc, ch;
     this->setMQTTCallbacks(client);
@@ -81,42 +83,40 @@ int Subscriber::run(MQTTClient& client) {
     return rc;
 };
 
-double Subscriber::parseCpuTemp(const std::string& jsonString) {
+double ADXL345Subscriber::parseJSONMessage(const std::string& jsonString) {
 
-    // make this generic
-    // Parse the JSON string
     cout << jsonString << endl;
     const char* jsonStringCStr = jsonString.c_str();
     json_object* root = json_tokener_parse(jsonStringCStr);
 
-    double cpu_temp = 0.0; // Default value in case parsing fails
+    SensorData sensorData;
 
     if (root != nullptr) {
         // Retrieve CPU temperature from the parsed JSON object
-        json_object* cpu_temp_obj;
-        if (json_object_object_get_ex(root, "CPU Temp", &cpu_temp_obj)) {
-            cpu_temp = json_object_get_double(cpu_temp_obj);
-            std::cout << "CPU Temp: " << cpu_temp << std::endl;
+        json_object* cpuTempObj;
+        if (json_object_object_get_ex(root, "CPU Temp", &cpuTempObj)) {
+            sensorData.cpuTemp = json_object_get_double(cpuTempObj);
         } else {
-            std::cerr << "CPU Temp not found in JSON" << std::endl;
+            cerr << "CPU Temp not found in JSON" << endl;
         }
-        // Free the parsed JSON object
+        // Retrieve accelerometer data from the parsed JSON object
+        json_object* accelerometerObj;
+        if (json_object_object_get_ex(root, "Accelerometer", &accelerometerObj)) {
+            json_object* pitchObj = json_object_object_get(accelerometerObj, "Pitch");
+            json_object* rollObj = json_object_object_get(accelerometerObj, "Roll");
+            
+            if (pitchObj != nullptr && rollObj != nullptr) {
+                sensorData.pitch = json_object_get_double(pitchObj);
+                sensorData.roll = json_object_get_double(rollObj);
+            } else {
+                cerr << "Pitch or Roll not found in Accelerometer data" << endl;
+            }
+        } else {
+            cerr << "Accelerometer data not found in JSON" << endl;
+        }
         json_object_put(root);
     } else {
-        std::cerr << "Failed to parse JSON" << std::endl;
+        cerr << "Failed to parse JSON" << endl;
     }
-    return cpu_temp; // Return the parsed CPU temperature
 };
-
 }
-
-int main(int argc, char* argv[]) {
-    
-    MQTTClient client;
-    MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-
-    Subscriber sub;
-    int rc = sub.run(client);
-    return rc;
-    // In the application have MAX_TEMP, pitch and roll, to set an alarm threshold
-};

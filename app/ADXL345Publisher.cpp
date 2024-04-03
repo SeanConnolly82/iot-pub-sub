@@ -4,6 +4,7 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <ctime>
 #include "MQTTClient.h"
 #include "ADXL345.h"
 #include "ADXL345Publisher.h"
@@ -82,6 +83,14 @@ string ADXL345Publisher::getDeviceData(ADXL345* ADXL345Device) {
     return dataStream.str();
 }
 
+string ADXL345Publisher::getCurrentTimestamp() {
+    auto now = chrono::system_clock::now();
+    time_t current_time = chrono::system_clock::to_time_t(now);
+    char buffer[20];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtime(&current_time));
+    return string(buffer);
+}
+
 void ADXL345Publisher::run(MQTTClient& client, ADXL345* ADXL345Device) {
     int rc;
     this->startExitHandler();
@@ -92,17 +101,21 @@ void ADXL345Publisher::run(MQTTClient& client, ADXL345* ADXL345Device) {
     }
     // Main loop for publishing MQTT messages
     while (!this->exitFlag) {
-        string deviceData = getDeviceData(ADXL345Device);
+        string deviceData = this->getDeviceData(ADXL345Device);
+        string timestamp = this->getCurrentTimestamp();
         char str_payload[1000];
         sprintf(str_payload,
-            "{\"Accelerometer\": %s , \"CPU Temp\": %f}", deviceData.c_str(), getCPUTemperature());
+            "{\"Publish timestamp\": \"%s\", \"Accelerometer\": %s,\"CPU Temp\": %f}", 
+              timestamp.c_str(), 
+              deviceData.c_str(), 
+              this->getCPUTemperature());
+        cout << str_payload << endl;
         pubmsg.payload = str_payload;
         pubmsg.payloadlen = strlen(str_payload);
         pubmsg.qos = QOS;
         pubmsg.retained = 0;
 
         MQTTClient_publishMessage(client, TOPIC, &this->pubmsg, &this->token);
-        // cout << str_payload << endl;
 
         rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
         std::this_thread::sleep_for(std::chrono::seconds(PUBLISH_INTERVAL));

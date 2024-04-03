@@ -9,18 +9,26 @@
 #include "MQTTClient.h"
 
 namespace subscriber {
-class Subscriber {
+class ADXL345Subscriber {
 private:
     static void delivered(void *context, MQTTClient_deliveryToken dt);
     static int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message);
     static void connlost(void *context, char *cause);
     MQTTClient_connectOptions opts;
-    std::string payload;
+    float maxCPUTemp;
+    float maxPitch;
+    float maxRoll;
 public:
-    Subscriber();
-    virtual void processMessage();
+    ADXL345Subscriber();
+    struct SensorData {
+        double cpuTemp;
+        double pitch;
+        double roll;
+    };
+    virtual void setMaxLimits(float maxCPUTemp, float maxPitch, float maxRoll);
+    virtual void processMessage(std::string payload);
     virtual void setMQTTCallbacks(MQTTClient& client);
-    virtual double parseCpuTemp(const std::string& jsonString);
+    virtual double parseJSONMessage(const std::string& jsonString);
     virtual int run(MQTTClient& client);
 };
 }
