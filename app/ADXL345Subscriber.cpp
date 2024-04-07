@@ -19,9 +19,9 @@ using namespace subscriber;
 #define QOS         1
 #define TIMEOUT     10000L
 
-#define LED_CPU     17
-#define LED_PITCH   18
-#define LED_ROLL    19
+#define LED_CPU     0
+#define LED_PITCH   2
+#define LED_ROLL    3
 
 volatile MQTTClient_deliveryToken deliveredtoken;
 
@@ -40,15 +40,27 @@ ADXL345Subscriber::ADXL345Subscriber() {
 };
 
 /**
- * @brief Set the maximum limits for CPU temperature, pitch, and roll.
+ * @brief Set the maximum limits for CPU temperature celsius.
  * @param maxCPUTemp The maximum CPU temperature threshold.
- * @param maxPitch The maximum pitch threshold.
- * @param maxRoll The maximum roll threshold.
  */
-void ADXL345Subscriber::setMaxLimits(float maxCPUTemp, float maxPitch, float maxRoll) {
-    this->maxCPUTemp = maxCPUTemp;
-    this->maxPitch = maxPitch;
-    this->maxRoll = maxRoll;
+void ADXL345Subscriber::setCpuLimit(float maxCPUTemp) {
+    this->cpuTempLimit = maxCPUTemp;
+};
+
+/**
+ * @brief Set the maximum limits for pitch degrees.
+ * @param maxPitch The maximum pitch threshold.
+ */
+void ADXL345Subscriber::setPitchLimit(float maxPitch) {
+    this->pitchLimit = maxPitch;
+};
+
+/**
+ * @brief Set the maximum limits for roll degrees.
+ * @param maxPitch The maximum roll threshold.
+ */
+void ADXL345Subscriber::setRollLimit(float maxRoll) {
+    this->rollLimit = maxRoll;
 };
 
 /**
@@ -57,16 +69,34 @@ void ADXL345Subscriber::setMaxLimits(float maxCPUTemp, float maxPitch, float max
  */
 void ADXL345Subscriber::processMessage(std::string payload) {
     SensorData data = this->parseJSONMessage(payload);
-    digitalWrite(LED_CPU, this->checkWithinLimit(data.cpuTemp, this->maxCPUTemp));
-    digitalWrite(LED_PITCH, this->checkWithinLimit(data.pitch, this->maxPitch));
-    digitalWrite(LED_ROLL, this->checkWithinLimit(data.roll, this->maxRoll));
+    this->driveLeds(data);
+};
+
+/**
+ * @brief If a non-default (!= 0.0 value) has been set, then drive a LED
+ * if it exists the limit that has been set.
+ * @param data A SensorData struct
+ */
+void ADXL345Subscriber::driveLeds(SensorData data) {
+    if (this->cpuTempLimit != 0.0) {
+        digitalWrite(LED_CPU, this->checkWithinLimit(data.cpuTemp, this->cpuTempLimit));
+    }
+    if (this->cpuTempLimit != 0.0) {
+        digitalWrite(LED_PITCH, this->checkWithinLimit(abs(data.pitch), this->cpuTempLimit));
+    }
+    if (this->rollLimit != 0.0) {
+        digitalWrite(LED_ROLL, this->checkWithinLimit(abs(data.roll), this->rollLimit));
+    }
 };
 
 /**
  * @brief Initializes the GPIO pins for the LEDs.
  */
-void ADXL345Subscriber::initialiseLEDS() {
-    wiringPiSetupGpio();
+void ADXL345Subscriber::initialiseLeds() {
+    wiringPiSetup();
+    pinMode(LED_CPU, OUTPUT);
+    pinMode(LED_PITCH, OUTPUT);
+    pinMode(LED_ROLL, OUTPUT);
 };
 
 /**
@@ -75,9 +105,8 @@ void ADXL345Subscriber::initialiseLEDS() {
  * @param limit The limit to compare against.
  * @return 1 if the value is within the limit, 0 otherwise.
  */
-
 int ADXL345Subscriber::checkWithinLimit(float value, float limit) {
-    return (value >= limit) ? 1 : 0
+    return (value >= limit) ? 1 : 0;
 };
 
 /**
@@ -135,7 +164,7 @@ int ADXL345Subscriber::run(MQTTClient& client) {
 
     int rc, ch;
     this->setMQTTCallbacks(client);
-    this->initialiseLEDS();
+    this->initialiseLeds();
 
     if ((rc = MQTTClient_connect(client, &this->opts)) != MQTTCLIENT_SUCCESS) {
         cout << "Failed to connect, return code " << rc << std::endl;
@@ -159,12 +188,9 @@ int ADXL345Subscriber::run(MQTTClient& client) {
  */
 ADXL345Subscriber::SensorData ADXL345Subscriber::parseJSONMessage(const std::string& jsonString) {
 
-    cout << jsonString << endl;
     const char* jsonStringCStr = jsonString.c_str();
     json_object* root = json_tokener_parse(jsonStringCStr);
-
     SensorData sensorData;
-
     if (root != nullptr) {
         // Retrieve CPU temperature from the parsed JSON object
         json_object* cpuTempObj;
@@ -178,7 +204,6 @@ ADXL345Subscriber::SensorData ADXL345Subscriber::parseJSONMessage(const std::str
         if (json_object_object_get_ex(root, "Accelerometer", &accelerometerObj)) {
             json_object* pitchObj = json_object_object_get(accelerometerObj, "Pitch");
             json_object* rollObj = json_object_object_get(accelerometerObj, "Roll");
-            
             if (pitchObj != nullptr && rollObj != nullptr) {
                 sensorData.pitch = json_object_get_double(pitchObj);
                 sensorData.roll = json_object_get_double(rollObj);

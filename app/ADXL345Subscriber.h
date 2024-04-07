@@ -22,20 +22,23 @@ private:
     static int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message);
     static void connlost(void *context, char *cause);
     MQTTClient_connectOptions opts;
-    float maxCPUTemp;
-    float maxPitch;
-    float maxRoll;
+    float cpuTempLimit;
+    float pitchLimit;
+    float rollLimit;
 public:
     ADXL345Subscriber();
     struct SensorData {
-        double cpuTemp;
-        double pitch;
-        double roll;
+        double cpuTemp = 0.0;
+        double pitch = 0.0;
+        double roll = 0.0;
     };
-    virtual void setMaxLimits(float maxCPUTemp, float maxPitch, float maxRoll);
+    virtual void setCpuLimit(float maxCPUTemp);
+    virtual void setPitchLimit(float maxPitch);
+    virtual void setRollLimit(float maxRoll);
     virtual void processMessage(std::string payload);
-    virtual void initialiseLEDS();
+    virtual void initialiseLeds();
     virtual int checkWithinLimit(float value, float limit);
+    virtual void driveLeds(SensorData data);
     virtual void setMQTTCallbacks(MQTTClient& client);
     SensorData parseJSONMessage(const std::string& jsonString);
     virtual int run(MQTTClient& client);

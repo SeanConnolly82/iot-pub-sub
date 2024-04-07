@@ -136,11 +136,10 @@ void ADXL345Publisher::run(MQTTClient& client, ADXL345* ADXL345Device) {
         string timestamp = this->getCurrentTimestamp();
         char str_payload[1000];
         sprintf(str_payload,
-            "{\"Publish timestamp\": \"%s\", \"Accelerometer\": %s,\"CPU Temp\": %f}", 
+            "{\"Payload timestamp\": \"%s\", \"Accelerometer\": %s,\"CPU Temp\": %f}", 
               timestamp.c_str(), 
               deviceData.c_str(), 
               this->getCPUTemperature());
-        cout << str_payload << endl;
         pubmsg.payload = str_payload;
         pubmsg.payloadlen = strlen(str_payload);
         pubmsg.qos = QOS;

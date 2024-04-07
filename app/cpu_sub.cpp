@@ -3,9 +3,7 @@
 
 #define ADDRESS    "tcp://192.168.0.243:1883"
 #define CLIENTID   "rpi2"
-#define MAXTTEMP   30.0
-#define MAXPITCH   10.0
-#define MAXROLL    10.0
+#define MAXTEMP    30.0
 
 using namespace subscriber;
 
@@ -15,7 +13,7 @@ int main(int argc, char* argv[]) {
     MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
     ADXL345Subscriber sub;
-    sub.setMaxLimits(MAXTTEMP, MAXPITCH, MAXROLL);
+    sub.setCpuLimit(MAXTEMP);
     int rc = sub.run(client);
     return rc;
 };
