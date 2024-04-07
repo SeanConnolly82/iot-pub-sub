@@ -2,4 +2,6 @@ paho
 WiringPi
 publish
 subscribe
+pr_subscribe
+cpu_subscribe
 .vscode/*

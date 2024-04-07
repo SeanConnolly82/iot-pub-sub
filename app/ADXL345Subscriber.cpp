@@ -81,8 +81,8 @@ void ADXL345Subscriber::driveLeds(SensorData data) {
     if (this->cpuTempLimit != 0.0) {
         digitalWrite(LED_CPU, this->checkWithinLimit(data.cpuTemp, this->cpuTempLimit));
     }
-    if (this->cpuTempLimit != 0.0) {
-        digitalWrite(LED_PITCH, this->checkWithinLimit(abs(data.pitch), this->cpuTempLimit));
+    if (this->pitchLimit != 0.0) {
+        digitalWrite(LED_PITCH, this->checkWithinLimit(abs(data.pitch), this->pitchLimit));
     }
     if (this->rollLimit != 0.0) {
         digitalWrite(LED_ROLL, this->checkWithinLimit(abs(data.roll), this->rollLimit));

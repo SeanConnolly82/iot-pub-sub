@@ -22,9 +22,9 @@ private:
     static int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message);
     static void connlost(void *context, char *cause);
     MQTTClient_connectOptions opts;
-    float cpuTempLimit;
-    float pitchLimit;
-    float rollLimit;
+    float cpuTempLimit = 0;
+    float pitchLimit = 0;
+    float rollLimit = 0;
 public:
     ADXL345Subscriber();
     struct SensorData {
